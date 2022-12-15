@@ -20,12 +20,25 @@ API Prometheus Exporter. Periodically query an API, cache the results, and prese
 
 ## Run locally
 
-1. Activate python virtual environment. Only needs to be done once in your shell.
+### Activate python virtual environment
+
+_This only needs to be done once in your shell._
 
         source venv/bin/activate
 
-2. Run the application.
+### Run the application
 
         python ape.py
 
-3. View the API in a web browser at http://127.0.0.1:8000 .
+#### Run the application with configuration
+
+Environment variables can be used to set configuration at run-time. For example, the `PORT` the http server uses can be set.
+
+        PORT=8080 python ape.py
+
+### Run tests
+
+      python configuration_test.py
+      ...
+
+
