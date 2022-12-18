@@ -10,9 +10,10 @@ from configuration import Configuration
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 config = Configuration({
+    "query_delay": 3,
     "port": 8000,
 })
-cached_metrics = None
+cached_metric_registry = CollectorRegistry()
 
 
 @app.get("/docs")
@@ -32,21 +33,32 @@ async def get_open_api_endpoint():
 
 @app.get("/metrics")
 async def get_metrics():
-    global cached_metrics  # TODO Move this assignment to a task running in the background.
-    cached_metrics = get_my_metrics()
-
-    return Response(cached_metrics)
+    return Response(generate_latest(cached_metric_registry))
 
 
-# Test out prometheus client and move this to a separate file later.
-# TODO Create a background task that generates metrics, updates the cached results, waits, and repeats.
-def get_my_metrics() -> bytes:
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(update_metrics_task())
+
+
+async def update_metrics_task():
+    global cached_metric_registry
+    counter = 0  # LATER Remove counter used for debugging.
+    while True:
+        print(counter)
+        cached_metric_registry = await update_metrics(counter)
+        counter += 1
+        await asyncio.sleep(config["query_delay"])
+
+
+# TODO Move to a separate file.
+async def update_metrics(counter: int) -> CollectorRegistry:
     registry = CollectorRegistry()
-    g = Gauge('my_first_gauge', 'will always be 1', registry=registry)
-    g.set(1)
+    g = Gauge('my_first_gauge', 'will increment', registry=registry)
+    g.set(counter)
     g2 = Gauge('my_second_gauge', 'will always be 2', registry=registry)
     g2.set(2)
-    return generate_latest(registry)
+    return registry
 
 
 if __name__ == "__main__":
